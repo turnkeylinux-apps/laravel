@@ -6,9 +6,7 @@ turnkey-laravel-14.0 (1) turnkey; urgency=low
     
     https://github.com/kefniark/turnkey-laravel
 
-  * Includes the latest stable version of Laravel (5.1 LTS).
-    
-  * Replaced PHPMyAdmin with Adminer
+  * Includes latest stable upstream version of Laravel (5.1 LTS).
 
   * Hardened default SSL settings
 
