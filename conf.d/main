@@ -1,35 +1,31 @@
 #!/bin/bash -ex
 
-# when updating, change LTS version here & also update doc link in README
-LTS=v10
-version=$(gh_releases laravel/laravel | grep -vi "beta\|rc" | grep $LTS | tail -1)
-VERSION="${version#v}"
+VERSION=13.10.0
+LARAVEL_COMMIT=9863f0544931b7e3062001a28e37f4fcf795ce5c
 
-SRC=/usr/local/src
-NAME=laravel
 WEBROOT=/var/www/laravel
 
 DB_NAME=laravel
 DB_USER=laravel
 DB_PASS=$(mcookie)
 
-# Download Laravel
-mkdir -p $WEBROOT
-chown -R www-data:www-data $WEBROOT
-turnkey-composer create-project laravel/laravel $WEBROOT $VERSION --prefer-dist --keep-vcs
+# Set up the database before Composer invokes Laravel.
+service mariadb start
+mysql --batch --execute "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASS'; GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost'; FLUSH PRIVILEGES;"
 
-# Ensure that turnkey-artisan knows where webroot is
-sed -i "\|^export WEBROOT| s|=.*|="$WEBROOT"|" /usr/local/bin/turnkey-artisan
+# Install the current supported Laravel application skeleton from the official
+# upstream repository. Composer resolves its supported production dependency
+# constraints and retains the generated lock file in the appliance.
+git clone --branch "v$VERSION" --single-branch --depth=1 \
+    https://github.com/laravel/laravel.git "$WEBROOT"
+test "$(git -C "$WEBROOT" rev-parse HEAD)" = "$LARAVEL_COMMIT"
+chown -R www-data:www-data "$WEBROOT"
+turnkey-composer install --working-dir="$WEBROOT" --no-dev --no-scripts \
+    --no-interaction --prefer-dist
 
-# start mysql server
-service mysql start
-
-# setup the database
-mysqladmin create $DB_NAME
-mysql --batch --execute "grant all privileges on $DB_NAME.* to $DB_USER@localhost identified by '$DB_PASS'; flush privileges;"
-
-# stop mysql server
-service mysql stop
+# Ensure that turnkey-artisan knows where webroot is.
+sed -i "\|^export WEBROOT| s|=.*|=\"$WEBROOT\"|" \
+    /usr/local/bin/turnkey-artisan
 
 # setup apache configuration
 a2dissite 000-default
@@ -37,13 +33,25 @@ a2enmod headers
 a2ensite laravel
 a2enmod rewrite
 
-# Set Laravel configuration
-sed -i '\|^APP_NAME=| s|=.*|="TurnKey Laravel"|' $WEBROOT/.env
-sed -i "\|^DB_USERNAME=| s|=.*|=$DB_USER|" $WEBROOT/.env
-sed -i "\|^DB_PASSWORD=| s|=.*|=$DB_PASS|" $WEBROOT/.env
+# Configure the sample application for MariaDB and complete its initial
+# framework setup without the skeleton's temporary SQLite defaults.
+cp "$WEBROOT/.env.example" "$WEBROOT/.env"
+sed -i '\|^APP_NAME=| s|=.*|="TurnKey Laravel"|' "$WEBROOT/.env"
+sed -i '\|^APP_ENV=| s|=.*|=production|' "$WEBROOT/.env"
+sed -i '\|^APP_DEBUG=| s|=.*|=false|' "$WEBROOT/.env"
+sed -i '\|^APP_URL=| s|=.*|=https://localhost|' "$WEBROOT/.env"
+sed -i '\|^DB_CONNECTION=| s|=.*|=mysql|' "$WEBROOT/.env"
+sed -i "s|^# DB_HOST=.*|DB_HOST=localhost|" "$WEBROOT/.env"
+sed -i "s|^# DB_PORT=.*|DB_PORT=3306|" "$WEBROOT/.env"
+sed -i "s|^# DB_DATABASE=.*|DB_DATABASE=$DB_NAME|" "$WEBROOT/.env"
+sed -i "s|^# DB_USERNAME=.*|DB_USERNAME=$DB_USER|" "$WEBROOT/.env"
+sed -i "s|^# DB_PASSWORD=.*|DB_PASSWORD=$DB_PASS|" "$WEBROOT/.env"
+chown www-data:www-data "$WEBROOT/.env"
+chmod 0640 "$WEBROOT/.env"
 
-# tweak laravel landing page
-WELCOME=$WEBROOT/resources/views/welcome.blade.php
-sed -i "\|laravel.com/docs| s|docs|docs/${VERSION%%.*}.x|" $WELCOME
-sed -i 's|laravel\.bigcartel\.com|turnkeylinux.org|' $WELCOME
-sed -i 's|Shop|TurnKey Linux|' $WELCOME
+turnkey-artisan package:discover --ansi
+turnkey-artisan key:generate --force --no-interaction
+turnkey-artisan migrate --force --no-interaction
+
+# Finish with database services stopped for image cleanup.
+service mariadb stop
