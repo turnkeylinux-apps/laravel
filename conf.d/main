@@ -26,6 +26,10 @@ turnkey-composer install --working-dir="$WEBROOT" --no-dev --no-scripts \
 # Ensure that turnkey-artisan knows where webroot is.
 sed -i "\|^export WEBROOT| s|=.*|=\"$WEBROOT\"|" \
     /usr/local/bin/turnkey-artisan
+# PsySH follows XDG_CONFIG_HOME when Artisan runs as www-data. Keep its
+# configuration beneath Laravel's writable storage tree.
+sed -i "\|^export WEBROOT|a export XDG_CONFIG_HOME=\"$WEBROOT/storage/framework\"" \
+    /usr/local/bin/turnkey-artisan
 
 # setup apache configuration
 a2dissite 000-default
