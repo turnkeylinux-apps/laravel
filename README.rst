@@ -11,7 +11,10 @@ This appliance includes all the standard features in `TurnKey Core`_, and on top
 
 - Laravel 
   
-   - Latest LTS_ release installed via composer_ to /var/www/laravel.
+   - Laravel 13 application skeleton installed from the official upstream
+     release tag to /var/www/laravel. Composer_ resolves its supported
+     production dependencies during the appliance build and retains the lock
+     file for future updates.
    - Composer_ globally installed for all your projects.
    - Includes turnkey-composer_ and turnkey-artisan_ (wrapper scripts which
      run composer_ and artisan_ respectively; as www-data user).
@@ -29,13 +32,10 @@ Usage
 Update Laravel::
 
     cd /var/www/laravel
-    # update composer
-    composer self-update
-    # update laravel build
+    # update framework dependencies within the supported Laravel 13 line
     turnkey-composer update
 
-If you wish to update to a newer release of Laravel (i.e. not the currently
-installed LTS) then please consult the `Laravel Upgrade Documentation`_.
+For a new Laravel major release, consult the `Laravel Upgrade Documentation`_.
 
 Credentials *(passwords set at first boot)*
 -------------------------------------------
@@ -46,11 +46,10 @@ Credentials *(passwords set at first boot)*
 
 .. _Laravel: https://laravel.com
 .. _TurnKey Core: https://www.turnkeylinux.org/core
-.. _LTS: https://laravel.com/docs/releases#support-policy
 .. _composer: https://getcomposer.org/
 .. _turnkey-composer: https://github.com/turnkeylinux/common/blob/master/overlays/composer/usr/local/bin/turnkey-composer
 .. _artisan: https://laravel.com/docs/artisan
 .. _turnkey-artisan: https://github.com/turnkeylinux/common/blob/master/overlays/artisan/usr/local/bin/turnkey-artisan
 .. _Adminer: https://www.adminer.org
-.. _Laravel Documentation: https://laravel.com/docs/10.x
+.. _Laravel Documentation: https://laravel.com/docs/13.x
 .. _Laravel Upgrade Documentation: https://laravel.com/docs/upgrade

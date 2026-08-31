@@ -1,3 +1,20 @@
+turnkey-laravel-19.0 (1) turnkey; urgency=low
+
+  * Install the supported Laravel 13 application skeleton from its pinned
+    official upstream tag and retain Composer's resolved production lock file.
+
+  * Configure the sample application for MariaDB 11.8, production-safe
+    defaults, database queues and Laravel's scheduler.
+
+  * Keep PsySH configuration in Laravel's writable storage tree so
+    turnkey-artisan tinker works as the www-data user.
+
+  * Upgrade the appliance base to Debian 13 Trixie with PHP 8.4 and add focused
+    acceptance for the HTTPS sample app, framework CLI, MariaDB persistence,
+    a queued job, the scheduler and the supported Composer update path.
+
+ -- TurnKey GNU/Linux <admin@turnkeylinux.org>  Tue, 25 Aug 2026 08:00:00 +0000
+
 turnkey-laravel-18.0 (1) turnkey; urgency=low
 
   * Update Laravel to latest LTS version - 10.40.0.
